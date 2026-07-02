@@ -2,7 +2,7 @@
 
 API REST para cadastro e gerenciamento básico de usuários, desenvolvida como projeto acadêmico para praticar a construção de uma aplicação em camadas com Spring Boot e persistência em banco de dados MySQL.
 
-> Este é um projeto de estudo. A implementação atual armazena e retorna senhas sem proteção, portanto não deve ser usada em produção.
+> Projeto acadêmico desenvolvido para o estudo de APIs REST com Spring Boot. Como evolução futura, pode receber criptografia de senhas com BCrypt, validações de entrada mais completas e autenticação.
 
 ## Tecnologias
 
@@ -48,7 +48,7 @@ Não é necessário instalar o Maven: o repositório inclui o Maven Wrapper.
 ### 1. Clone o repositório
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone https://github.com/rodrygords/ApiUsers.git
 cd ApiUsers
 ```
 
@@ -117,7 +117,8 @@ ApiUsers/
 │   │   │   ├── service/      # Regras e operações da aplicação
 │   │   │   └── ApiUsersApplication.java
 │   │   └── resources/
-│   │       └── application.properties
+│   │       ├── application-example.properties  # Modelo de configuração versionado
+│   │       └── application.properties          # Configuração local ignorada pelo Git
 │   └── test/                    # Testes automatizados
 ├── .mvn/                        # Configuração do Maven Wrapper
 ├── mvnw
@@ -137,10 +138,9 @@ O projeto exercita conceitos de Programação Orientada a Objetos e desenvolvime
 - integração de uma aplicação Java com MySQL;
 - uso de UUID como identificador de entidades.
 
-## Limitações atuais
+## Melhorias futuras
 
-- As senhas são armazenadas sem hash e aparecem nas respostas que retornam a entidade `User`.
-- Não há autenticação, autorização ou validação dos dados de entrada.
-- O endpoint de atualização possui a inconsistência de rota descrita na seção de endpoints.
-- Os testes atuais verificam apenas o carregamento do contexto da aplicação.
-
+- Aplicar BCrypt ao armazenamento de senhas e evitar a exposição de dados sensíveis nas respostas.
+- Adicionar autenticação, autorização e validações de entrada mais completas.
+- Ajustar o mapeamento da rota de atualização.
+- Ampliar a cobertura de testes para os endpoints e as regras da aplicação.
