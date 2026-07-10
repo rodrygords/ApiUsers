@@ -1,5 +1,7 @@
 # API de Usuários
 
+[![CI](https://github.com/rodrygords/ApiUsers/actions/workflows/ci.yml/badge.svg)](https://github.com/rodrygords/ApiUsers/actions/workflows/ci.yml)
+
 API REST acadêmica para cadastro e gerenciamento de usuários, desenvolvida com Java 21 e Spring Boot. O projeto usa persistência em MySQL e mantém a senha armazenada como hash BCrypt, sem retorná-la nas respostas.
 
 ## Tecnologias
@@ -88,6 +90,8 @@ bash ./mvnw test
 ```
 
 Os testes atuais cobrem regras do service com Mockito e endpoints com MockMvc, sem depender de uma instância externa do MySQL.
+
+O GitHub Actions executa os testes e o empacotamento da aplicação em pushes e pull requests para `main`.
 
 Para compilar sem executar os testes:
 
