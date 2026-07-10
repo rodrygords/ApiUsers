@@ -2,6 +2,7 @@ package poo.ASemestral.ApiUsers.entity;
 
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -14,19 +15,21 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
-    @Column(name = "username")
+    @Column(name = "username", nullable = false, length = 100)
     private String username;
 
-    @Column(name = "email")
+    @Column(name = "email", nullable = false, unique = true, length = 254)
     private String email;
 
-    @Column(name = "password")
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @UpdateTimestamp
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private Instant creationTimestamp;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private Instant updateTimestamp;
 
     public User() {
@@ -89,6 +92,5 @@ public class User {
         this.updateTimestamp = updateTimestamp;
     }
 }
-
 
 

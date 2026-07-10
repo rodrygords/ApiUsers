@@ -1,64 +1,60 @@
 package poo.ASemestral.ApiUsers.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import poo.ASemestral.ApiUsers.entity.User;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import poo.ASemestral.ApiUsers.service.UserService;
 
-import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody CreateUserDto createUserDto) {
-        var userId = userService.createUser(createUserDto);
-        return ResponseEntity.created(URI.create("/api/users" + userId.toString())).build();
+    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateDto createDto) {
+        UserResponseDto createdUser = userService.createUser(createDto);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{userId}")
+                .buildAndExpand(createdUser.userId())
+                .toUri();
+        return ResponseEntity.created(location).body(createdUser);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable("userId") String userId) {
-       var user = userService.getUserById(userId);
-       if (user.isPresent()){
-           return ResponseEntity.ok(user.get());
-       } else {
-           return ResponseEntity.notFound().build();
-       }
-
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
+
     @GetMapping
-    public ResponseEntity<List<User>> listUsers() {
-        var users =  userService.listUsers();
-        return ResponseEntity.ok(users);
-
+    public ResponseEntity<List<UserResponseDto>> listUsers() {
+        return ResponseEntity.ok(userService.listUsers());
     }
 
-    @PutMapping
-    public ResponseEntity<Void> updateUserById(@PathVariable("userId") String userId,
-                                               @RequestBody UpdateUserDto updateUserDto) {
-        userService.updateUserById(userId, updateUserDto);
-        return ResponseEntity.noContent().build();
-
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserResponseDto> updateUserById(@PathVariable UUID userId,
+                                                           @Valid @RequestBody UserUpdateDto updateDto) {
+        return ResponseEntity.ok(userService.updateUserById(userId, updateDto));
     }
-
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteById(@PathVariable("userId") String userId) {
+    public ResponseEntity<Void> deleteById(@PathVariable UUID userId) {
         userService.deleteById(userId);
-        // var users = userService.listUsers();
-
         return ResponseEntity.noContent().build();
-
     }
 }

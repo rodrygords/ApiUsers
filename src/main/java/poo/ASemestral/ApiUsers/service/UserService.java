@@ -1,74 +1,109 @@
 package poo.ASemestral.ApiUsers.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import poo.ASemestral.ApiUsers.controller.CreateUserDto;
-import poo.ASemestral.ApiUsers.controller.UpdateUserDto;
+import org.springframework.transaction.annotation.Transactional;
+import poo.ASemestral.ApiUsers.controller.UserCreateDto;
+import poo.ASemestral.ApiUsers.controller.UserResponseDto;
+import poo.ASemestral.ApiUsers.controller.UserUpdateDto;
 import poo.ASemestral.ApiUsers.entity.User;
+import poo.ASemestral.ApiUsers.exception.DuplicateEmailException;
+import poo.ASemestral.ApiUsers.exception.UserNotFoundException;
 import poo.ASemestral.ApiUsers.repository.UserRepository;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
 public class UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public UUID createUser(CreateUserDto createUserDto) {
-        // NÃO USE O CONSTRUTOR COM PARÂMETROS!
+    @Transactional
+    public UserResponseDto createUser(UserCreateDto createDto) {
+        String normalizedEmail = normalizeEmail(createDto.email());
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateEmailException();
+        }
+
         var entity = new User();
-        // NÃO SETE O UUID - deixe o @GeneratedValue fazer isso
-        entity.setUsername(createUserDto.username());
-        entity.setEmail(createUserDto.email());
-        entity.setPassword(createUserDto.password());
-        // NÃO SETE creationTimestamp nem updateTimestamp
+        entity.setUsername(createDto.username().trim());
+        entity.setEmail(normalizedEmail);
+        entity.setPassword(passwordEncoder.encode(createDto.password()));
 
-        var userSaved = userRepository.save(entity);
-        return userSaved.getUserId();
-    }
-
-    public Optional<User> getUserById(String userId) {
-        return userRepository.findById(UUID.fromString(userId));
-    }
-
-    public List<User> listUsers() {
-        return userRepository.findAll();
-    }
-
-    public void updateUserById(String userId, UpdateUserDto updateUserDto) {
-        var id = UUID.fromString(userId);
-        var userEntity = userRepository.findById(id);
-
-        if (userEntity.isPresent()) {
-            var user = userEntity.get();
-
-            if (updateUserDto.username() != null) {
-                user.setUsername(updateUserDto.username());
-            }
-
-            if (updateUserDto.email() != null) {
-                user.setEmail(updateUserDto.email());
-            }
-
-            if (updateUserDto.password() != null) {
-                user.setPassword(updateUserDto.password());
-            }
-
-            userRepository.save(user);
+        try {
+            return toResponse(userRepository.save(entity));
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateEmailException();
         }
     }
 
-    public void deleteById(String userId) {
-        var id = UUID.fromString(userId);
-        var userExists = userRepository.existsById(id);
+    @Transactional(readOnly = true)
+    public UserResponseDto getUserById(UUID userId) {
+        return toResponse(findUser(userId));
+    }
 
-        if (userExists) {
-            userRepository.deleteById(id);
+    @Transactional(readOnly = true)
+    public List<UserResponseDto> listUsers() {
+        return userRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public UserResponseDto updateUserById(UUID userId, UserUpdateDto updateDto) {
+        User user = findUser(userId);
+
+        if (updateDto.username() != null) {
+            user.setUsername(updateDto.username().trim());
         }
+
+        if (updateDto.email() != null) {
+            String normalizedEmail = normalizeEmail(updateDto.email());
+            if (userRepository.existsByEmailIgnoreCaseAndUserIdNot(normalizedEmail, userId)) {
+                throw new DuplicateEmailException();
+            }
+            user.setEmail(normalizedEmail);
+        }
+
+        if (updateDto.password() != null) {
+            user.setPassword(passwordEncoder.encode(updateDto.password()));
+        }
+
+        try {
+            return toResponse(userRepository.save(user));
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateEmailException();
+        }
+    }
+
+    @Transactional
+    public void deleteById(UUID userId) {
+        User user = findUser(userId);
+        userRepository.delete(user);
+    }
+
+    private User findUser(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private UserResponseDto toResponse(User user) {
+        return new UserResponseDto(
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getCreationTimestamp(),
+                user.getUpdateTimestamp()
+        );
     }
 }
